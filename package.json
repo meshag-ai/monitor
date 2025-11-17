@@ -6,21 +6,46 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "temporal:worker": "tsx temporal/worker.ts"
   },
   "dependencies": {
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "next": "16.0.1"
+    "next": "16.0.1",
+    "@mantine/core": "^7.15.0",
+    "@mantine/hooks": "^7.15.0",
+    "@mantine/form": "^7.15.0",
+    "@mantine/notifications": "^7.15.0",
+    "@clerk/nextjs": "^6.7.0",
+    "@prisma/client": "^6.1.0",
+    "prisma": "^6.1.0",
+    "pg": "^8.13.1",
+    "mysql2": "^3.12.0",
+    "@temporalio/client": "^1.10.1",
+    "@temporalio/workflow": "^1.10.1",
+    "@temporalio/activity": "^1.10.1",
+    "@temporalio/common": "^1.10.1",
+    "@temporalio/worker": "^1.10.1",
+    "zod": "^3.24.1",
+    "recharts": "^2.15.0",
+    "@tabler/icons-react": "^3.21.0",
+    "svix": "^1.46.0"
   },
   "devDependencies": {
     "typescript": "^5",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
     "@tailwindcss/postcss": "^4",
     "tailwindcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "16.0.1"
-  }
+  },
+  "packageManager": "pnpm@9.15.1+sha512.1acb565e6193efbebda772702950469150cf12bcc764262e7587e71d19dc98a423dff9536e57ea44c49bdf790ff694e83c27be5faa23d67e0c033b583be4bfcf"
 }
