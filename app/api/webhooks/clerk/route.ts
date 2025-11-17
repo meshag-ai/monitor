@@ -2,6 +2,7 @@ import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { WebhookEvent } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
@@ -16,6 +17,7 @@ export async function POST(req: Request) {
   const svix_signature = headerPayload.get('svix-signature');
 
   if (!svix_id || !svix_timestamp || !svix_signature) {
+    logger.warn('Clerk webhook called with missing svix headers');
     return new Response('Error occurred -- no svix headers', {
       status: 400,
     });
@@ -35,34 +37,47 @@ export async function POST(req: Request) {
       'svix-signature': svix_signature,
     }) as WebhookEvent;
   } catch (err) {
-    console.error('Error verifying webhook:', err);
+    logger.error({ err }, 'Error verifying Clerk webhook');
     return new Response('Error occurred', {
       status: 400,
     });
   }
 
-  if (evt.type === 'user.created') {
-    await prisma.user.create({
-      data: {
-        id: evt.data.id,
-        email: evt.data.email_addresses[0]?.email_address || '',
-      },
-    });
-  }
+  const log = logger.child({ webhookId: evt.data.id, eventType: evt.type });
 
-  if (evt.type === 'user.updated') {
-    await prisma.user.update({
-      where: { id: evt.data.id },
-      data: {
-        email: evt.data.email_addresses[0]?.email_address || '',
-      },
-    });
-  }
+  try {
+    if (evt.type === 'user.created') {
+      log.info('Processing user.created webhook');
+      await prisma.user.create({
+        data: {
+          id: evt.data.id,
+          email: evt.data.email_addresses[0]?.email_address || '',
+        },
+      });
+      log.info('User created successfully');
+    }
 
-  if (evt.type === 'user.deleted') {
-    await prisma.user.delete({
-      where: { id: evt.data.id! },
-    });
+    if (evt.type === 'user.updated') {
+      log.info('Processing user.updated webhook');
+      await prisma.user.update({
+        where: { id: evt.data.id },
+        data: {
+          email: evt.data.email_addresses[0]?.email_address || '',
+        },
+      });
+      log.info('User updated successfully');
+    }
+
+    if (evt.type === 'user.deleted') {
+      log.info('Processing user.deleted webhook');
+      await prisma.user.delete({
+        where: { id: evt.data.id! },
+      });
+      log.info('User deleted successfully');
+    }
+  } catch (error) {
+    log.error({ error }, 'Error processing Clerk webhook');
+    return new Response('Error occurred', { status: 500 });
   }
 
   return new Response('', { status: 200 });

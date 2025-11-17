@@ -5,6 +5,8 @@ async function run() {
   const address = process.env.TEMPORAL_ADDRESS;
   const apiKey = process.env.TEMPORAL_API_KEY;
 
+  console.log('Starting Temporal worker', { address, apiKey });
+
   if (!address) {
     throw new Error('TEMPORAL_ADDRESS environment variable is required');
   }
@@ -13,13 +15,13 @@ async function run() {
     address,
     tls: apiKey
       ? {
-          clientCertPair: process.env.TEMPORAL_CLIENT_CERT && process.env.TEMPORAL_CLIENT_KEY
-            ? {
-                crt: Buffer.from(process.env.TEMPORAL_CLIENT_CERT),
-                key: Buffer.from(process.env.TEMPORAL_CLIENT_KEY),
-              }
-            : undefined,
-        }
+        clientCertPair: process.env.TEMPORAL_CLIENT_CERT && process.env.TEMPORAL_CLIENT_KEY
+          ? {
+            crt: Buffer.from(process.env.TEMPORAL_CLIENT_CERT),
+            key: Buffer.from(process.env.TEMPORAL_CLIENT_KEY),
+          }
+          : undefined,
+      }
       : undefined,
   };
 

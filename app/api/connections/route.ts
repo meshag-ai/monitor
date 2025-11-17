@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { encryptCredentials } from '@/lib/encryption';
 import { PostgresConnector } from '@/lib/db-connectors/postgres';
 import { MySQLConnector } from '@/lib/db-connectors/mysql';
+import { logger } from '@/lib/logger';
 
 const createConnectionSchema = z.object({
   name: z.string().min(1),
@@ -21,8 +22,11 @@ export async function GET() {
   const { userId } = await auth();
 
   if (!userId) {
+    logger.warn('Unauthorized access attempt to GET /api/connections');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  logger.info({ userId }, 'Fetching connections');
 
   const connections = await prisma.connection.findMany({
     where: { userId },
@@ -43,6 +47,8 @@ export async function GET() {
     orderBy: { createdAt: 'desc' },
   });
 
+  logger.info({ userId, count: connections.length }, 'Successfully fetched connections');
+
   return NextResponse.json(connections);
 }
 
@@ -50,12 +56,15 @@ export async function POST(req: Request) {
   const { userId } = await auth();
 
   if (!userId) {
+    logger.warn('Unauthorized access attempt to POST /api/connections');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const body = await req.json();
     const data = createConnectionSchema.parse(body);
+
+    logger.info({ userId, dbType: data.dbType, host: data.host }, 'Attempting to create a new connection');
 
     const { encrypted, encryptionKeyId } = encryptCredentials(data.password);
 
@@ -82,6 +91,7 @@ export async function POST(req: Request) {
     await connector.close();
 
     if (!isValid) {
+      logger.warn({ userId, dbType: data.dbType, host: data.host }, 'Connection test failed');
       return NextResponse.json({ error: 'Invalid credentials or connection failed' }, { status: 400 });
     }
 
@@ -101,6 +111,8 @@ export async function POST(req: Request) {
       },
     });
 
+    logger.info({ userId, connectionId: connection.id }, 'Successfully created a new connection');
+
     return NextResponse.json({
       id: connection.id,
       name: connection.name,
@@ -117,9 +129,10 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      logger.warn({ userId, error: error.errors }, 'Invalid input for creating a connection');
       return NextResponse.json({ error: 'Invalid input', details: error.errors }, { status: 400 });
     }
-    console.error(error);
+    logger.error({ userId, error }, 'Failed to create connection');
     return NextResponse.json({ error: 'Failed to create connection' }, { status: 500 });
   }
 }

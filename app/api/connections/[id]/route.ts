@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { encryptCredentials, decryptCredentials } from '@/lib/encryption';
 import { PostgresConnector } from '@/lib/db-connectors/postgres';
 import { MySQLConnector } from '@/lib/db-connectors/mysql';
+import { logger } from '@/lib/logger';
 
 const updateConnectionSchema = z.object({
   name: z.string().min(1).optional(),
@@ -21,12 +22,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { userId } = await auth();
+  const { id } = await params;
+  const log = logger.child({ userId, connectionId: id, method: 'GET' });
 
   if (!userId) {
+    log.warn('Unauthorized access attempt');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = await params;
+  log.info('Fetching connection');
+
   const connection = await prisma.connection.findFirst({
     where: { id, userId },
     select: {
@@ -46,9 +51,11 @@ export async function GET(
   });
 
   if (!connection) {
+    log.warn('Connection not found');
     return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
   }
 
+  log.info('Successfully fetched connection');
   return NextResponse.json(connection);
 }
 
@@ -57,21 +64,26 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { userId } = await auth();
+  const { id } = await params;
+  const log = logger.child({ userId, connectionId: id, method: 'PUT' });
 
   if (!userId) {
+    log.warn('Unauthorized access attempt');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const { id } = await params;
     const body = await req.json();
     const data = updateConnectionSchema.parse(body);
+
+    log.info({ data: Object.keys(data) }, 'Attempting to update connection');
 
     const existing = await prisma.connection.findFirst({
       where: { id, userId },
     });
 
     if (!existing) {
+      log.warn('Connection not found');
       return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
     }
 
@@ -108,11 +120,14 @@ export async function PUT(
       },
     });
 
+    log.info('Successfully updated connection');
     return NextResponse.json(connection);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      log.warn({ error: error.errors }, 'Invalid input for updating a connection');
       return NextResponse.json({ error: 'Invalid input', details: error.errors }, { status: 400 });
     }
+    log.error({ error }, 'Failed to update connection');
     return NextResponse.json({ error: 'Failed to update connection' }, { status: 500 });
   }
 }
@@ -122,18 +137,22 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { userId } = await auth();
+  const { id } = await params;
+  const log = logger.child({ userId, connectionId: id, method: 'DELETE' });
 
   if (!userId) {
+    log.warn('Unauthorized access attempt');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const { id } = await params;
+    log.info('Attempting to delete connection');
     const connection = await prisma.connection.findFirst({
       where: { id, userId },
     });
 
     if (!connection) {
+      log.warn('Connection not found');
       return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
     }
 
@@ -141,8 +160,10 @@ export async function DELETE(
       where: { id },
     });
 
+    log.info('Successfully deleted connection');
     return NextResponse.json({ success: true });
   } catch (error) {
+    log.error({ error }, 'Failed to delete connection');
     return NextResponse.json({ error: 'Failed to delete connection' }, { status: 500 });
   }
 }
