@@ -1,10 +1,25 @@
-import { Connection, Client } from '@temporalio/client';
+import { Client, Connection } from "@temporalio/client";
 
-const connection = Connection.connect({
-  address: process.env.TEMPORAL_ADDRESS!,
-});
+let temporal: Client | undefined;
 
-export const temporal = new Client({
-  connection,
-  namespace: process.env.TEMPORAL_NAMESPACE || 'default',
-});
+export function getTemporalClient(): Client {
+	if (!temporal) {
+		console.log("[Next.js] Initializing lazy Temporal client...");
+
+		const address = process.env.TEMPORAL_ADDRESS;
+		if (!address) {
+			throw new Error(
+				"TEMPORAL_ADDRESS is not defined in the Next.js environment",
+			);
+		}
+
+		const connection = Connection.lazy({
+			address,
+		});
+
+		temporal = new Client({
+			connection,
+		});
+	}
+	return temporal;
+}

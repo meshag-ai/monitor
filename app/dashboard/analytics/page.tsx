@@ -1,21 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import {
-  Container,
-  Title,
-  Select,
-  Grid,
-  Card,
-  Text,
-  Group,
-  Table,
   Badge,
+  Card,
+  Container,
+  Grid,
+  Group,
   LoadingOverlay,
+  Select,
   Stack,
+  Table,
+  Text,
+  Title,
 } from '@mantine/core';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { notifications } from '@mantine/notifications';
+import { useEffect, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 interface Connection {
   id: string;
@@ -90,7 +90,7 @@ export default function AnalyticsPage() {
             <Card shadow="sm" padding="lg" radius="md" withBorder>
               <Text size="lg" fw={500} mb="xs">Total Queries</Text>
               <Text size="xl" fw={700}>
-                {Number(analytics.totalQueries).toLocaleString()}
+                {Number(analytics.totalQueries ?? 0).toLocaleString()}
               </Text>
             </Card>
           </Grid.Col>
@@ -99,7 +99,7 @@ export default function AnalyticsPage() {
             <Card shadow="sm" padding="lg" radius="md" withBorder>
               <Text size="lg" fw={500} mb="xs">Avg Execution Time</Text>
               <Text size="xl" fw={700}>
-                {analytics.avgExecutionTime.toFixed(2)} ms
+                {analytics?.avgExecutionTime?.toFixed(2) || 0} ms
               </Text>
             </Card>
           </Grid.Col>
@@ -108,7 +108,7 @@ export default function AnalyticsPage() {
             <Card shadow="sm" padding="lg" radius="md" withBorder>
               <Text size="lg" fw={500} mb="xs">Slow Queries</Text>
               <Text size="xl" fw={700} c="red">
-                {analytics.slowQueries}
+                {analytics.slowQueries ?? 0}
               </Text>
             </Card>
           </Grid.Col>
@@ -125,7 +125,7 @@ export default function AnalyticsPage() {
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {analytics.mostFrequent.slice(0, 5).map((q: any) => (
+                  {(analytics.mostFrequent ?? []).slice(0, 5).map((q: any) => (
                     <Table.Tr key={q.id}>
                       <Table.Td>
                         <Text size="xs" lineClamp={1} style={{ maxWidth: 300 }}>
@@ -153,7 +153,7 @@ export default function AnalyticsPage() {
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {analytics.slowest.slice(0, 5).map((q: any) => (
+                  {(analytics.slowest ?? []).slice(0, 5).map((q: any) => (
                     <Table.Tr key={q.id}>
                       <Table.Td>
                         <Text size="xs" lineClamp={1} style={{ maxWidth: 300 }}>
@@ -182,7 +182,7 @@ export default function AnalyticsPage() {
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {analytics.tablePatterns.slice(0, 10).map((t: any) => (
+                  {(analytics.tablePatterns ?? []).slice(0, 10).map((t: any) => (
                     <Table.Tr key={t.id}>
                       <Table.Td>{t.tableName}</Table.Td>
                       <Table.Td>{Number(t.accessCount).toLocaleString()}</Table.Td>
@@ -205,7 +205,7 @@ export default function AnalyticsPage() {
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
-                  {analytics.indexUsage.slice(0, 10).map((idx: any) => (
+                  {(analytics.indexUsage ?? []).slice(0, 10).map((idx: any) => (
                     <Table.Tr key={idx.id}>
                       <Table.Td>{idx.tableName}</Table.Td>
                       <Table.Td>{idx.indexName}</Table.Td>

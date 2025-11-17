@@ -1,17 +1,17 @@
-import pino from 'pino';
+import pino from "pino";
+import pinoPretty from "pino-pretty";
 
 const pinoOptions: pino.LoggerOptions = {
-    level: process.env.LOG_LEVEL || 'info',
+	level: process.env.LOG_LEVEL || "info",
 };
 
-// if (process.env.NODE_ENV !== 'production') {
-//     pinoOptions.transport = {
-//         target: 'pino-pretty',
-//         options: {
-//             colorize: true,
-//             ignore: 'pid,hostname',
-//         },
-//     };
-// }
+const streams = [];
 
-export const logger = pino(pinoOptions);
+if (process.env.NODE_ENV !== "production") {
+	streams.push({
+		level: "debug",
+		stream: pinoPretty(),
+	});
+}
+
+export const logger = pino(pinoOptions, pino.multistream(streams));
