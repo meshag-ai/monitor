@@ -22,7 +22,11 @@ export async function getConnection(connectionId: string) {
 		const connection = await prisma.connection.findUnique({
 			where: { id: connectionId },
 			include: {
-				user: true,
+				organization: {
+					include: {
+						users: true,
+					},
+				},
 			},
 		});
 		log.info("Successfully got connection", { connectionId });

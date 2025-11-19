@@ -30,8 +30,20 @@ export async function POST(req: Request) {
 			);
 		}
 
+		const organization = await prisma.organizationUser.findFirst({
+			where: { user: { id: userId } },
+		});
+
+		if (!organization) {
+			log.warn({ userId }, "User is not a member of any organization");
+			return NextResponse.json(
+				{ error: "Organization not found" },
+				{ status: 404 },
+			);
+		}
+
 		const connection = await prisma.connection.findFirst({
-			where: { id: connectionId, userId },
+			where: { id: connectionId, organizationId: organization.organizationId },
 		});
 
 		if (!connection) {

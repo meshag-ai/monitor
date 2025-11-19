@@ -44,66 +44,89 @@ model User {
   email     String
   createdAt DateTime @default(now())
 
-  connections             Connection[]
   optimizationSuggestions OptimizationSuggestion[]
+  organizations           OrganizationUser[]
 
   @@index([email])
 }
 
-model Connection {
-  id                    String            @id @default(cuid())
-  userId                String
-  name                  String
-  dbType                DbType
-  host                  String
-  port                  Int
-  database              String
-  username              String
-  encryptedPassword     String
-  encryptionKeyId       String
-  pollingIntervalMinutes Int              @default(5)
-  status                ConnectionStatus   @default(TESTING)
-  lastSyncedAt          DateTime?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
+model Organization {
+  id          String             @id
+  name        String
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  connections Connection[]
+  users       OrganizationUser[]
+}
 
-  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  queries               Query[]
-  tableAccessPatterns   TableAccessPattern[]
-  indexUsage            IndexUsage[]
-  optimizationSuggestions OptimizationSuggestion[]
-  schemaSnapshots       SchemaSnapshot[]
+model OrganizationUser {
+  organizationId String
+  userId         String
+  role           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([organizationId, userId])
   @@index([userId])
+}
+
+model Connection {
+  id                     String           @id @default(cuid())
+  organizationId         String
+  name                   String
+  dbType                 DbType
+  host                   String
+  port                   Int
+  database               String
+  username               String
+  encryptedPassword      String
+  encryptionKeyId        String
+  pollingIntervalMinutes Int              @default(1440)
+  status                 ConnectionStatus @default(TESTING)
+  lastSyncedAt           DateTime?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  organization            Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  queries                 Query[]
+  tableAccessPatterns     TableAccessPattern[]
+  indexUsage              IndexUsage[]
+  optimizationSuggestions OptimizationSuggestion[]
+  schemaSnapshots         SchemaSnapshot[]
+
+  @@index([organizationId])
   @@index([status])
   @@index([lastSyncedAt])
 }
 
 model Query {
-  id           String    @id @default(cuid())
+  id           String   @id @default(cuid())
   connectionId String
   queryHash    String
-  queryText    String    @db.Text
-  firstSeenAt  DateTime  @default(now())
-  lastSeenAt   DateTime  @updatedAt
+  queryText    String   @db.Text
+  firstSeenAt  DateTime @default(now())
+  lastSeenAt   DateTime @updatedAt
 
-  connection   Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-  stats        QueryStats[]
-  plans        QueryPlan[]
-  suggestions  OptimizationSuggestion[]
+  connection  Connection               @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  stats       QueryStats[]
+  plans       QueryPlan[]
+  suggestions OptimizationSuggestion[]
 
   @@unique([connectionId, queryHash])
   @@index([connectionId])
 }
 
 model QueryStats {
-  id                   String    @id @default(cuid())
+  id                   String   @id @default(cuid())
   queryId              String
-  capturedAt           DateTime  @default(now())
+  capturedAt           DateTime @default(now())
   executionCount       BigInt
   totalExecutionTimeMs Float
 
-  query                Query     @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  query Query @relation(fields: [queryId], references: [id], onDelete: Cascade)
 
   @@index([queryId, capturedAt])
 }
@@ -115,7 +138,7 @@ model QueryPlan {
   costEstimate Float?
   createdAt    DateTime @default(now())
 
-  query        Query    @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  query Query @relation(fields: [queryId], references: [id], onDelete: Cascade)
 
   @@index([queryId])
   @@index([createdAt])
@@ -128,7 +151,7 @@ model TableAccessPattern {
   accessCount    BigInt    @default(0)
   lastAccessedAt DateTime?
 
-  connection     Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  connection Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
   @@unique([connectionId, tableName])
   @@index([connectionId, accessCount])
@@ -136,37 +159,37 @@ model TableAccessPattern {
 }
 
 model IndexUsage {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   connectionId  String
   tableName     String
   indexName     String
-  scans         BigInt    @default(0)
-  tuplesRead    BigInt    @default(0)
-  tuplesFetched BigInt    @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  scans         BigInt   @default(0)
+  tuplesRead    BigInt   @default(0)
+  tuplesFetched BigInt   @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  connection    Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  connection Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
   @@unique([connectionId, tableName, indexName])
   @@index([connectionId, scans])
 }
 
 model OptimizationSuggestion {
-  id             String            @id @default(cuid())
+  id             String             @id @default(cuid())
   connectionId   String
   userId         String
   queryId        String?
-  suggestionText String            @db.Text
+  suggestionText String             @db.Text
   suggestionType SuggestionType
   priority       SuggestionPriority
-  status         SuggestionStatus  @default(NEW)
-  createdAt      DateTime          @default(now())
+  status         SuggestionStatus   @default(NEW)
+  createdAt      DateTime           @default(now())
   appliedAt      DateTime?
 
-  connection     Connection        @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-  query          Query?            @relation(fields: [queryId], references: [id], onDelete: SetNull)
-  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connection Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  query      Query?     @relation(fields: [queryId], references: [id], onDelete: SetNull)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([connectionId, status])
   @@index([connectionId, priority])
@@ -179,20 +202,20 @@ model SchemaSnapshot {
   connectionId String
   capturedAt   DateTime @default(now())
 
-  connection   Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-  tables       SchemaTable[]
+  connection Connection    @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  tables     SchemaTable[]
 
   @@index([connectionId, capturedAt])
 }
 
 model SchemaTable {
-  id         String   @id @default(cuid())
+  id         String @id @default(cuid())
   snapshotId String
   tableName  String
 
-  snapshot   SchemaSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
-  columns    SchemaColumn[]
-  indexes    SchemaIndex[]
+  snapshot SchemaSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  columns  SchemaColumn[]
+  indexes  SchemaIndex[]
 
   @@index([snapshotId])
 }
@@ -204,18 +227,18 @@ model SchemaColumn {
   dataType   String
   isNullable Boolean
 
-  table      SchemaTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  table SchemaTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
 
   @@index([tableId])
 }
 
 model SchemaIndex {
-  id        String @id @default(cuid())
-  tableId   String
-  indexName String
+  id         String @id @default(cuid())
+  tableId    String
+  indexName  String
   definition String @db.Text
 
-  table     SchemaTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  table SchemaTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
 
   @@index([tableId])
 }

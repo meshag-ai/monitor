@@ -23,8 +23,23 @@ export async function POST(
 	}
 
 	try {
+		const organization = await prisma.organizationUser.findFirst({
+			where: { userId },
+			include: {
+				organization: true,
+			},
+		});
+
+		if (!organization) {
+			log.warn("Organization not found");
+			return NextResponse.json(
+				{ error: "Organization not found" },
+				{ status: 404 },
+			);
+		}
+
 		const connection = await prisma.connection.findFirst({
-			where: { id, userId },
+			where: { id, organizationId: organization.organizationId },
 		});
 
 		if (!connection) {
@@ -40,16 +55,15 @@ export async function POST(
 
 		const temporal = getTemporalClient();
 
-		console.log("Temporal client:", temporal);
-
-		const count = await temporal.workflowService.countWorkflowExecutions({
-			namespace: process.env.TEMPORAL_NAMESPACE || "default",
-		});
-
-		console.log("Workflow executions count:", count);
+		const temporalTaskQueue = process.env.TEMPORAL_TASK_QUEUE;
+		if (!temporalTaskQueue) {
+			throw new Error(
+				"TEMPORAL_TASK_QUEUE is not defined in the environment variables",
+			);
+		}
 
 		await temporal.workflow.start("syncDatabaseStats", {
-			taskQueue: "default",
+			taskQueue: temporalTaskQueue,
 			workflowId,
 			args: [id],
 		});

@@ -7,16 +7,23 @@ export async function GET(
 	req: Request,
 	{ params }: { params: Promise<{ id: string }> },
 ) {
-	const { userId } = await auth();
+	const { userId, orgId } = await auth();
 
 	if (!userId) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
+	if (!orgId) {
+		return NextResponse.json(
+			{ error: "User is not part of an organization" },
+			{ status: 400 },
+		);
+	}
+
 	try {
 		const { id: connectionId } = await params;
 		const connection = await prisma.connection.findFirst({
-			where: { id: connectionId, userId },
+			where: { id: connectionId, organizationId: orgId },
 		});
 
 		if (!connection) {

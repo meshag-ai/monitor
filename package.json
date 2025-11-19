@@ -1,5 +1,5 @@
 {
-  "name": "plotweft",
+  "name": "meshag",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -14,10 +14,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.7.0",
-    "@mantine/core": "^7.15.0",
-    "@mantine/form": "^7.15.0",
-    "@mantine/hooks": "^7.15.0",
-    "@mantine/notifications": "^7.15.0",
+    "@hookform/resolvers": "^5.2.2",
     "@paralleldrive/cuid2": "^3.0.4",
     "@prisma/client": "^6.1.0",
     "@tabler/icons-react": "^3.21.0",
@@ -26,15 +23,21 @@
     "@temporalio/common": "^1.10.1",
     "@temporalio/worker": "^1.10.1",
     "@temporalio/workflow": "^1.10.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.23.24",
     "mysql2": "^3.12.0",
     "next": "16.0.1",
     "pg": "^8.13.1",
     "pino": "^10.1.0",
+    "posthog-js": "^1.296.1",
     "prisma": "^6.1.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "react-hook-form": "^7.66.1",
+    "react-hot-toast": "^2.6.0",
     "recharts": "^2.15.0",
     "svix": "^1.46.0",
+    "tailwind-merge": "^3.4.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

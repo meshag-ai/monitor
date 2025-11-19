@@ -1,10 +1,10 @@
 # Crusor AI Agent Documentation
 
-This document provides a comprehensive overview of the Plotweft application, intended for use by AI agents like Crusor. It covers the application's architecture, database schema, background jobs, and API routes.
+This document provides a comprehensive overview of the MeshAG application, intended for use by AI agents like Crusor. It covers the application's architecture, database schema, background jobs, and API routes.
 
 ## Application Overview
 
-Plotweft is a web application designed to help users monitor and optimize their database performance. It allows users to connect to their databases (PostgreSQL or MySQL), and the application will automatically collect statistics, analyze slow queries, and provide optimization suggestions using an LLM.
+MeshAG is a web application designed to help users monitor and optimize their database performance. It allows users to connect to their databases (PostgreSQL or MySQL), and the application will automatically collect statistics, analyze slow queries, and provide optimization suggestions using an LLM.
 
 ### Technology Stack
 
@@ -13,7 +13,7 @@ Plotweft is a web application designed to help users monitor and optimize their 
 -   **ORM:** [Prisma](https://www.prisma.io/)
 -   **Background Jobs:** [Temporal.io](https://temporal.io/)
 -   **Authentication:** [Clerk](https://clerk.com/)
--   **Styling:** [Tailwind CSS](https://tailwindcss.com/) (based on `globals.css`)
+-   **Styling:** Mantine UI
 
 ### Project Structure
 
