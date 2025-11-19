@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { DbConnector } from "@/lib/db-connectors/base";
+import type { DbConnector } from "@/lib/db-connectors/base";
 import { MySQLConnector } from "@/lib/db-connectors/mysql";
 import { PostgresConnector } from "@/lib/db-connectors/postgres";
 import { logger } from "@/lib/logger";
