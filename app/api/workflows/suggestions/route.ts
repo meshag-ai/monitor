@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { getOrganizationIdByUserId } from "@/lib/crud";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { getTemporalClient } from "@/lib/temporal-client";
@@ -29,9 +30,10 @@ export async function POST(req: Request) {
 				{ status: 400 },
 			);
 		}
+		const organizationId = await getOrganizationIdByUserId(userId);
 
 		const connection = await prisma.connection.findFirst({
-			where: { id: connectionId, userId },
+			where: { id: connectionId, organizationId },
 		});
 
 		if (!connection) {

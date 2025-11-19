@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { getOrganizationIdByUserId } from "@/lib/crud";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { getTemporalClient } from "@/lib/temporal-client";
@@ -23,23 +24,9 @@ export async function POST(
 	}
 
 	try {
-		const organization = await prisma.organizationUser.findFirst({
-			where: { userId },
-			include: {
-				organization: true,
-			},
-		});
-
-		if (!organization) {
-			log.warn("Organization not found");
-			return NextResponse.json(
-				{ error: "Organization not found" },
-				{ status: 404 },
-			);
-		}
-
+		const organizationId = await getOrganizationIdByUserId(userId);
 		const connection = await prisma.connection.findFirst({
-			where: { id, organizationId: organization.organizationId },
+			where: { id, organizationId },
 		});
 
 		if (!connection) {
