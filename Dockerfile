@@ -11,7 +11,7 @@ COPY package.json pnpm-lock.yaml ./
 COPY .npmrc* ./
 
 # Install all dependencies (including dev dependencies for building)
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Stage 2: Build the application
 FROM node:20-alpine AS builder
@@ -36,7 +36,7 @@ RUN pnpm prisma:generate
 
 # Build the temporal worker
 # The worker uses tsx to run TypeScript directly, but we'll prepare the environment
-RUN pnpm install tsx --frozen-lockfile
+RUN pnpm install tsx
 
 # Stage 3: Production image
 FROM node:20-alpine AS production
@@ -49,7 +49,7 @@ WORKDIR /app
 # Copy package files and install production dependencies only
 COPY package.json pnpm-lock.yaml ./
 COPY .npmrc* ./
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod
 
 # Install tsx for running TypeScript (needed for worker)
 RUN pnpm add tsx
