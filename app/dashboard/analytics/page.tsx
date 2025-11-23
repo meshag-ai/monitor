@@ -4,6 +4,23 @@
 import { useOrganization } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 
 interface Connection {
 	id: string;
@@ -72,263 +89,224 @@ export default function AnalyticsPage() {
 	}, [selectedConnection]);
 
 	return (
-		<div className="container mx-auto p-8">
-			<div className="flex justify-between items-center mb-8">
-				<h1 className="text-3xl font-bold">Analytics</h1>
-				<select
-					value={selectedConnection ?? ""}
-					onChange={(e) => setSelectedConnection(e.target.value)}
-					className="p-2 border rounded-md w-72 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 cursor-pointer"
-				>
-					<option value="" disabled>
-						Select connection
-					</option>
-					{connections.map((c) => (
-						<option key={c.id} value={c.id}>
-							{c.name}
-						</option>
-					))}
-				</select>
+		<div className="space-y-6">
+			<div className="flex justify-between items-center">
+				<h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
+				<div className="w-[280px]">
+					<Select
+						value={selectedConnection ?? ""}
+						onValueChange={(value) => setSelectedConnection(value)}
+					>
+						<SelectTrigger>
+							<SelectValue placeholder="Select connection" />
+						</SelectTrigger>
+						<SelectContent>
+							{connections.map((c) => (
+								<SelectItem key={c.id} value={c.id}>
+									{c.name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
 			</div>
 
 			{loading && (
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-pulse">
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
 					{[...Array(3)].map((_, i) => (
 						<div
 							key={`stat-skeleton-${i}`}
-							className="bg-white rounded-lg shadow-md p-6 border border-gray-100 h-32"
-						>
-							<div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
-							<div className="h-8 bg-gray-200 rounded w-1/3"></div>
-						</div>
+							className="bg-muted rounded-xl h-32"
+						></div>
 					))}
 					{[...Array(4)].map((_, i) => (
 						<div
 							key={`table-skeleton-${i}`}
-							className={`bg-white rounded-lg shadow-md p-6 border border-gray-100 h-96 ${i < 2 ? "md:col-span-2 lg:col-span-3" : ""}`}
-						>
-							<div className="h-6 bg-gray-200 rounded w-1/4 mb-6"></div>
-							<div className="space-y-4">
-								{[...Array(5)].map((_, j) => (
-									<div
-										key={j}
-										className="h-12 bg-gray-100 rounded w-full"
-									></div>
-								))}
-							</div>
-						</div>
+							className={`bg-muted rounded-xl h-96 ${i < 2 ? "md:col-span-2 lg:col-span-3" : ""}`}
+						></div>
 					))}
 				</div>
 			)}
 
 			{analytics && selectedConnection && (
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-					<div className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
-						<h2 className="text-lg font-semibold mb-2 text-gray-800">
-							Total Queries
-						</h2>
-						<p className="text-2xl font-bold text-gray-900">
-							{Number(analytics.totalQueries ?? 0).toLocaleString()}
-						</p>
-					</div>
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					<Card>
+						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+							<CardTitle className="text-sm font-medium">
+								Total Queries
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="text-2xl font-bold">
+								{Number(analytics.totalQueries ?? 0).toLocaleString()}
+							</div>
+						</CardContent>
+					</Card>
 
-					<div className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
-						<h2 className="text-lg font-semibold mb-2 text-gray-800">
-							Avg Execution Time
-						</h2>
-						<p className="text-2xl font-bold text-gray-900">
-							{analytics?.avgExecutionTime?.toFixed(2) || 0} ms
-						</p>
-					</div>
+					<Card>
+						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+							<CardTitle className="text-sm font-medium">
+								Avg Execution Time
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="text-2xl font-bold">
+								{analytics?.avgExecutionTime?.toFixed(2) || 0} ms
+							</div>
+						</CardContent>
+					</Card>
 
-					<div className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
-						<h2 className="text-lg font-semibold mb-2 text-gray-800">
-							Slow Queries
-						</h2>
-						<p className="text-2xl font-bold text-red-600">
-							{analytics.slowQueries ?? 0}
-						</p>
-					</div>
+					<Card>
+						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+							<CardTitle className="text-sm font-medium">
+								Slow Queries
+							</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div className="text-2xl font-bold text-destructive">
+								{analytics.slowQueries ?? 0}
+							</div>
+						</CardContent>
+					</Card>
 
-					<div className="md:col-span-2 lg:col-span-3 bg-white rounded-lg shadow-md p-6 border border-gray-100">
-						<h2 className="text-lg font-semibold mb-4 text-gray-800">
-							Most Frequent Queries
-						</h2>
-						<table className="w-full text-sm text-left">
-							<thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b">
-								<tr>
-									<th scope="col" className="px-6 py-3 font-medium">
-										Query
-									</th>
-									<th scope="col" className="px-6 py-3 font-medium">
-										Executions
-									</th>
-									<th scope="col" className="px-6 py-3 font-medium">
-										Avg Time
-									</th>
-								</tr>
-							</thead>
-							<tbody className="text-gray-600">
-								{(analytics.mostFrequent ?? []).slice(0, 5).map((q: any) => (
-									<tr
-										key={q.id}
-										className="bg-white border-b hover:bg-gray-50 transition-colors"
-									>
-										<td className="px-6 py-4 truncate max-w-xs font-mono text-xs text-gray-700">
-											{q.queryText}
-										</td>
-										<td className="px-6 py-4">
-											{Number(q.executionCount).toLocaleString()}
-										</td>
-										<td className="px-6 py-4">
-											{q.avgExecutionTimeMs.toFixed(2)} ms
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-
-					<div className="md:col-span-2 lg:col-span-3 bg-white rounded-lg shadow-md p-6 border border-gray-100">
-						<h2 className="text-lg font-semibold mb-4 text-gray-800">
-							Slowest Queries
-						</h2>
-						<table className="w-full text-sm text-left">
-							<thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b">
-								<tr>
-									<th scope="col" className="px-6 py-3 font-medium">
-										Query
-									</th>
-									<th scope="col" className="px-6 py-3 font-medium">
-										Executions
-									</th>
-									<th scope="col" className="px-6 py-3 font-medium">
-										Avg Time
-									</th>
-								</tr>
-							</thead>
-							<tbody className="text-gray-600">
-								{(analytics.slowest ?? []).slice(0, 5).map((q: any) => (
-									<tr
-										key={q.id}
-										className="bg-white border-b hover:bg-gray-50 transition-colors"
-									>
-										<td className="px-6 py-4 truncate max-w-xs font-mono text-xs text-gray-700">
-											{q.queryText}
-										</td>
-										<td className="px-6 py-4">
-											{Number(q.executionCount).toLocaleString()}
-										</td>
-										<td className="px-6 py-4">
-											<span className="bg-red-100 text-red-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-red-200">
+					<Card className="md:col-span-2 lg:col-span-3">
+						<CardHeader>
+							<CardTitle>Most Frequent Queries</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead>Query</TableHead>
+										<TableHead>Executions</TableHead>
+										<TableHead>Avg Time</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
+									{(analytics.mostFrequent ?? []).slice(0, 5).map((q: any) => (
+										<TableRow key={q.id}>
+											<TableCell className="font-mono text-xs max-w-xs truncate">
+												{q.queryText}
+											</TableCell>
+											<TableCell>
+												{Number(q.executionCount).toLocaleString()}
+											</TableCell>
+											<TableCell>
 												{q.avgExecutionTimeMs.toFixed(2)} ms
-											</span>
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
+											</TableCell>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
+						</CardContent>
+					</Card>
 
-					<div className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
-						<h2 className="text-lg font-semibold mb-4 text-gray-800">
-							Table Access Patterns
-						</h2>
-						<table className="w-full text-sm text-left">
-							<thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b">
-								<tr>
-									<th scope="col" className="px-6 py-3 font-medium">
-										Table
-									</th>
-									<th scope="col" className="px-6 py-3 font-medium">
-										Access Count
-									</th>
-								</tr>
-							</thead>
-							<tbody className="text-gray-600">
-								{(analytics.tablePatterns ?? []).slice(0, 10).map((t: any) => (
-									<tr
-										key={t.id}
-										className="bg-white border-b hover:bg-gray-50 transition-colors"
-									>
-										<td className="px-6 py-4 font-medium text-gray-900">
-											{t.tableName}
-										</td>
-										<td className="px-6 py-4">
-											{Number(t.accessCount).toLocaleString()}
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
+					<Card className="md:col-span-2 lg:col-span-3">
+						<CardHeader>
+							<CardTitle>Slowest Queries</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead>Query</TableHead>
+										<TableHead>Executions</TableHead>
+										<TableHead>Avg Time</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
+									{(analytics.slowest ?? []).slice(0, 5).map((q: any) => (
+										<TableRow key={q.id}>
+											<TableCell className="font-mono text-xs max-w-xs truncate">
+												{q.queryText}
+											</TableCell>
+											<TableCell>
+												{Number(q.executionCount).toLocaleString()}
+											</TableCell>
+											<TableCell>
+												<Badge variant="destructive">
+													{q.avgExecutionTimeMs.toFixed(2)} ms
+												</Badge>
+											</TableCell>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
+						</CardContent>
+					</Card>
 
-					<div className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
-						<h2 className="text-lg font-semibold mb-4 text-gray-800">
-							Index Usage
-						</h2>
-						<table className="w-full text-sm text-left">
-							<thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b">
-								<tr>
-									<th scope="col" className="px-6 py-3 font-medium">
-										Table
-									</th>
-									<th scope="col" className="px-6 py-3 font-medium">
-										Index
-									</th>
-									<th scope="col" className="px-6 py-3 font-medium">
-										Scans
-									</th>
-								</tr>
-							</thead>
-							<tbody className="text-gray-600">
-								{(analytics.indexUsage ?? []).slice(0, 10).map((idx: any) => (
-									<tr
-										key={idx.id}
-										className="bg-white border-b hover:bg-gray-50 transition-colors"
-									>
-										<td className="px-6 py-4 font-medium text-gray-900">
-											{idx.tableName}
-										</td>
-										<td className="px-6 py-4 font-mono text-xs">
-											{idx.indexName}
-										</td>
-										<td className="px-6 py-4">
-											{Number(idx.scans).toLocaleString()}
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
+					<Card>
+						<CardHeader>
+							<CardTitle>Table Access Patterns</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead>Table</TableHead>
+										<TableHead>Access Count</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
+									{(analytics.tablePatterns ?? [])
+										.slice(0, 10)
+										.map((t: any) => (
+											<TableRow key={t.id}>
+												<TableCell className="font-medium">
+													{t.tableName}
+												</TableCell>
+												<TableCell>
+													{Number(t.accessCount).toLocaleString()}
+												</TableCell>
+											</TableRow>
+										))}
+								</TableBody>
+							</Table>
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle>Index Usage</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead>Table</TableHead>
+										<TableHead>Index</TableHead>
+										<TableHead>Scans</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
+									{(analytics.indexUsage ?? []).slice(0, 10).map((idx: any) => (
+										<TableRow key={idx.id}>
+											<TableCell className="font-medium">
+												{idx.tableName}
+											</TableCell>
+											<TableCell className="font-mono text-xs">
+												{idx.indexName}
+											</TableCell>
+											<TableCell>
+												{Number(idx.scans).toLocaleString()}
+											</TableCell>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
+						</CardContent>
+					</Card>
 				</div>
 			)}
 
 			{!analytics && !loading && (
-				<div className="bg-white rounded-lg shadow-md p-12 text-center border border-gray-100">
-					<div className="text-gray-300 mb-4">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-16 w-16 mx-auto"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-						>
-							<title>No data to display</title>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={1}
-								d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-							/>
-						</svg>
+				<div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center animate-in fade-in-50 min-h-[400px]">
+					<div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
+						<h3 className="mt-4 text-lg font-semibold">No Data to Display</h3>
+						<p className="mb-4 mt-2 text-sm text-muted-foreground">
+							Select a database connection above to view analytics.
+						</p>
 					</div>
-					<h3 className="text-lg font-medium text-gray-900 mb-1">
-						No Data to Display
-					</h3>
-					<p className="text-gray-500">
-						Select a database connection above to view analytics
-					</p>
 				</div>
 			)}
 		</div>

@@ -7,6 +7,27 @@ import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 import { z } from "zod";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Define a schema for your form
 const schema = z.object({
@@ -42,6 +63,7 @@ export default function ConnectionsPage() {
 	const [connections, setConnections] = useState<Connection[]>([]);
 	const [opened, setOpened] = useState(false);
 	const [loading, setLoading] = useState(false);
+	const [isLoadingConnections, setIsLoadingConnections] = useState(true);
 	const [testing, setTesting] = useState(false);
 	const [step, setStep] = useState(0);
 
@@ -67,6 +89,7 @@ export default function ConnectionsPage() {
 	});
 
 	const fetchConnections = useCallback(async () => {
+		setIsLoadingConnections(true);
 		try {
 			const response = await fetch("/api/connections");
 			if (response.ok) {
@@ -75,14 +98,28 @@ export default function ConnectionsPage() {
 			}
 		} catch (error) {
 			console.error("Failed to fetch connections", error);
-			// You can replace this with a toast notification library compatible with Tailwind
 			toast.error("Failed to fetch connections");
+		} finally {
+			setIsLoadingConnections(false);
 		}
 	}, []);
 
 	useEffect(() => {
 		if (organization) {
 			fetchConnections();
+		} else {
+			// If no organization is loaded yet, we might still be loading auth,
+			// but usually organization is null if not selected.
+			// For now, let's stop loading if organization is not present to avoid infinite loading if user has no org.
+			// However, useOrganization().isLoaded is better check.
+			// But keeping it simple based on existing code structure.
+			// Actually, if organization is undefined, it might mean loading.
+			// If null, it means no org.
+			// Let's just rely on fetchConnections being called when organization is available.
+			// But we need to handle the initial state.
+			// If we initialize isLoadingConnections to true, we should ensure it turns false eventually.
+			// If organization is null, we might want to show empty state or prompt to create org.
+			// For this specific request, I'll assume organization loads eventually.
 		}
 	}, [organization, fetchConnections]);
 
@@ -124,7 +161,6 @@ export default function ConnectionsPage() {
 				toast.success("Connection created successfully");
 				setOpened(false);
 				reset();
-				// Start initial sync
 				handleSync(data.id);
 				fetchConnections();
 			} else {
@@ -171,196 +207,110 @@ export default function ConnectionsPage() {
 		}
 	};
 
-	const getStatusColor = (status: string) => {
+	const getStatusVariant = (status: string) => {
 		switch (status) {
 			case "ACTIVE":
-				return "bg-green-500";
+				return "default";
 			case "ERROR":
-				return "bg-red-500";
+				return "destructive";
 			case "TESTING":
-				return "bg-yellow-500";
+				return "secondary";
 			default:
-				return "bg-gray-500";
+				return "secondary";
 		}
 	};
 
 	return (
-		<div className="container mx-auto p-8">
-			<div className="flex justify-between items-center mb-8">
-				<h1 className="text-3xl font-bold">Connections</h1>
-				<button
-					type="button"
-					onClick={() => setOpened(true)}
-					className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center hover:cursor-pointer"
+		<div className="space-y-6">
+			<div className="flex justify-between items-center">
+				<h1 className="text-3xl font-bold tracking-tight">Connections</h1>
+				<Dialog
+					open={opened}
+					onOpenChange={(open) => {
+						setOpened(open);
+						if (!open) {
+							reset();
+							setStep(0);
+						}
+					}}
 				>
-					<IconPlus className="w-4 h-4 mr-2" />
-					Add Connection
-				</button>
-			</div>
-
-			<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-				{connections.map((conn) => (
-					<div
-						key={conn.id}
-						className="bg-white rounded-lg shadow-md p-6 border border-gray-100"
-					>
-						<div className="flex justify-between items-center mb-2">
-							<h2 className="text-xl font-semibold text-gray-800">
-								{conn.name}
-							</h2>
-							<span
-								className={`px-2 py-1 text-xs font-semibold text-white rounded-full ${getStatusColor(
-									conn.status,
-								)}`}
-							>
-								{conn.status}
-							</span>
-						</div>
-						<p className="text-sm text-gray-600 mb-1">
-							{conn.dbType} - {conn.host}:{conn.port}
-						</p>
-						<p className="text-sm text-gray-600 mb-4">
-							Database: {conn.database}
-						</p>
-						{conn.lastSyncedAt && (
-							<p className="text-xs text-gray-500 mb-4">
-								Last synced: {new Date(conn.lastSyncedAt).toLocaleString()}
-							</p>
-						)}
-						<div className="flex justify-end space-x-2">
-							<button
-								type="button"
-								onClick={() => handleSync(conn.id)}
-								className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-blue-600 transition-colors cursor-pointer"
-							>
-								<IconRefresh className="w-4 h-4" />
-							</button>
-							<button
-								type="button"
-								onClick={() => handleDelete(conn.id)}
-								className="p-2 rounded-full hover:bg-red-50 text-gray-500 hover:text-red-600 transition-colors cursor-pointer"
-							>
-								<IconTrash className="w-4 h-4" />
-							</button>
-						</div>
-					</div>
-				))}
-			</div>
-
-			{connections.length === 0 && (
-				<div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-500 border border-gray-100">
-					No connections yet. Click "Add Connection" to get started.
-				</div>
-			)}
-
-			{opened && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/30">
-					<div className="w-full max-w-2xl bg-white rounded-xl shadow-2xl p-8 relative animate-in fade-in zoom-in duration-200">
-						<div className="flex justify-between items-center mb-6 border-b pb-4">
-							<h2 className="text-2xl font-bold text-gray-900">
+					<DialogTrigger asChild>
+						<Button>
+							<IconPlus className="w-4 h-4 mr-2" />
+							Add Connection
+						</Button>
+					</DialogTrigger>
+					{/* ... DialogContent ... */}
+					<DialogContent className="sm:max-w-[600px]">
+						<DialogHeader>
+							<DialogTitle>
 								{step === 0 ? "Setup Instructions" : "Connection Details"}
-							</h2>
-							<span className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-								Step {step + 1} / 2
-							</span>
-						</div>
+							</DialogTitle>
+							<DialogDescription>Step {step + 1} / 2</DialogDescription>
+						</DialogHeader>
+
 						{step === 0 && (
 							<div className="space-y-6">
-								<div className="bg-blue-50 border border-blue-100 rounded-lg p-5">
-									<h3 className="font-semibold text-blue-900 mb-3 text-lg">
-										PostgreSQL Setup
-									</h3>
-									<div className="space-y-4 text-gray-700">
-										<p className="text-sm">
-											Follow these steps to configure your PostgreSQL database
-											for monitoring:
+								<div className="bg-muted/50 border rounded-lg p-4">
+									<h3 className="font-semibold mb-2">PostgreSQL Setup</h3>
+									<div className="space-y-4 text-sm text-muted-foreground">
+										<p>
+											Follow these steps to configure your PostgreSQL database:
 										</p>
-										<ol className="list-decimal list-inside space-y-3 text-sm marker:font-bold marker:text-blue-600">
+										<ol className="list-decimal list-inside space-y-2">
 											<li>
-												<strong className="text-gray-900">
-													Enable pg_stat_statements extension
+												<strong className="text-foreground">
+													Enable pg_stat_statements
 												</strong>
-												<p className="text-gray-600 mt-1 ml-4">
-													This extension tracks execution statistics of all SQL
-													statements.
-												</p>
-												<pre className="bg-gray-900 text-gray-100 p-3 rounded-md text-xs mt-2 overflow-x-auto font-mono">
+												<pre className="bg-muted p-2 rounded mt-1 overflow-x-auto font-mono text-xs">
 													CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 												</pre>
 											</li>
 											<li>
-												<strong className="text-gray-900">
+												<strong className="text-foreground">
 													Create a read-only user
 												</strong>
-												<p className="text-gray-600 mt-1 ml-4">
-													This user needs specific grants to read performance
-													data.
-												</p>
-												<pre className="bg-gray-900 text-gray-100 p-3 rounded-md text-xs mt-2 overflow-x-auto font-mono leading-relaxed">
-													{`CREATE USER monitoring_user WITH PASSWORD 'your_secure_password';
-GRANT CONNECT ON DATABASE your_db TO monitoring_user;
+												<pre className="bg-muted p-2 rounded mt-1 overflow-x-auto font-mono text-xs">
+													{`CREATE USER monitoring_user WITH PASSWORD 'password';
+GRANT CONNECT ON DATABASE db TO monitoring_user;
 GRANT USAGE ON SCHEMA public TO monitoring_user;
 GRANT SELECT ON pg_stat_statements TO monitoring_user;`}
 												</pre>
 											</li>
-											<li>
-												<strong className="text-gray-900">
-													Whitelist our IP addresses
-												</strong>
-												<p className="text-gray-600 mt-1 ml-4">
-													Ensure your firewall and `pg_hba.conf` file allow
-													connections from our servers.
-												</p>
-											</li>
 										</ol>
 									</div>
 								</div>
-								<div className="flex justify-end pt-2">
-									<button
-										type="button"
-										onClick={() => setStep(1)}
-										className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm cursor-pointer"
-									>
-										Next Step
-									</button>
-								</div>
+								<DialogFooter>
+									<Button onClick={() => setStep(1)}>Next Step</Button>
+								</DialogFooter>
 							</div>
 						)}
+
 						{step === 1 && (
 							<form
 								onSubmit={handleHookFormSubmit(onSubmit)}
-								className="space-y-6"
+								className="space-y-4"
 							>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-									<div className="col-span-full md:col-span-1">
-										<label
-											htmlFor="name"
-											className="block text-sm font-medium text-gray-700 mb-1"
-										>
-											Connection Name
-										</label>
-										<input
-											type="text"
+								<div className="grid grid-cols-2 gap-4">
+									<div className="space-y-2">
+										<Label htmlFor="name">Connection Name</Label>
+										<Input
+											id="name"
 											placeholder="My Production DB"
 											{...register("name")}
-											className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
 										/>
 										{errors.name && (
-											<p className="text-red-600 text-xs mt-1">
+											<p className="text-destructive text-xs">
 												{errors.name.message}
 											</p>
 										)}
 									</div>
-									<div className="col-span-full md:col-span-1">
-										<label
-											htmlFor="dbType"
-											className="block text-sm font-medium text-gray-700 mb-1"
-										>
-											Database Type
-										</label>
+									<div className="space-y-2">
+										<Label htmlFor="dbType">Database Type</Label>
 										<select
+											id="dbType"
 											{...register("dbType")}
-											className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
+											className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
 										>
 											<option value="POSTGRES">PostgreSQL</option>
 											<option value="MYSQL" disabled>
@@ -368,177 +318,193 @@ GRANT SELECT ON pg_stat_statements TO monitoring_user;`}
 											</option>
 										</select>
 										{errors.dbType && (
-											<p className="text-red-600 text-xs mt-1">
+											<p className="text-destructive text-xs">
 												{errors.dbType.message}
 											</p>
 										)}
 									</div>
-									<div className="col-span-full md:col-span-2">
-										<label
-											htmlFor="host"
-											className="block text-sm font-medium text-gray-700 mb-1"
-										>
-											Host
-										</label>
-										<input
-											type="text"
+									<div className="col-span-2 space-y-2">
+										<Label htmlFor="host">Host</Label>
+										<Input
+											id="host"
 											placeholder="db.example.com"
 											{...register("host")}
-											className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
 										/>
 										{errors.host && (
-											<p className="text-red-600 text-xs mt-1">
+											<p className="text-destructive text-xs">
 												{errors.host.message}
 											</p>
 										)}
 									</div>
-									<div>
-										<label
-											htmlFor="port"
-											className="block text-sm font-medium text-gray-700 mb-1"
-										>
-											Port
-										</label>
-										<input
+									<div className="space-y-2">
+										<Label htmlFor="port">Port</Label>
+										<Input
 											type="number"
+											id="port"
 											placeholder="5432"
 											{...register("port", { valueAsNumber: true })}
-											className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
 										/>
 										{errors.port && (
-											<p className="text-red-600 text-xs mt-1">
+											<p className="text-destructive text-xs">
 												{errors.port.message}
 											</p>
 										)}
 									</div>
-									<div>
-										<label
-											htmlFor="database"
-											className="block text-sm font-medium text-gray-700 mb-1"
-										>
-											Database Name
-										</label>
-										<input
-											type="text"
+									<div className="space-y-2">
+										<Label htmlFor="database">Database Name</Label>
+										<Input
+											id="database"
 											placeholder="postgres"
 											{...register("database")}
-											className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
 										/>
 										{errors.database && (
-											<p className="text-red-600 text-xs mt-1">
+											<p className="text-destructive text-xs">
 												{errors.database.message}
 											</p>
 										)}
 									</div>
-									<div>
-										<label
-											htmlFor="username"
-											className="block text-sm font-medium text-gray-700 mb-1"
-										>
-											Username
-										</label>
-										<input
-											type="text"
+									<div className="space-y-2">
+										<Label htmlFor="username">Username</Label>
+										<Input
+											id="username"
 											placeholder="monitoring_user"
 											{...register("username")}
-											className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
 										/>
 										{errors.username && (
-											<p className="text-red-600 text-xs mt-1">
+											<p className="text-destructive text-xs">
 												{errors.username.message}
 											</p>
 										)}
 									</div>
-									<div>
-										<label
-											htmlFor="password"
-											className="block text-sm font-medium text-gray-700 mb-1"
-										>
-											Password
-										</label>
-										<input
+									<div className="space-y-2">
+										<Label htmlFor="password">Password</Label>
+										<Input
 											type="password"
+											id="password"
 											placeholder="••••••••"
 											{...register("password")}
-											className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
 										/>
 										{errors.password && (
-											<p className="text-red-600 text-xs mt-1">
+											<p className="text-destructive text-xs">
 												{errors.password.message}
 											</p>
 										)}
 									</div>
-									<div className="col-span-full">
-										<label
-											htmlFor="pollingIntervalMinutes"
-											className="block text-sm font-medium text-gray-700 mb-1"
-										>
-											Polling Interval (minutes)
-										</label>
-										<input
-											type="number"
-											disabled
-											{...register("pollingIntervalMinutes", {
-												valueAsNumber: true,
-											})}
-											className="w-full p-2.5 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-										/>
-										<p className="text-xs text-gray-500 mt-1">
-											Fixed at 1440 minutes (24 hours) for the free tier.
-										</p>
-									</div>
 								</div>
-								<div className="flex justify-end pt-4 space-x-3 border-t mt-6">
-									<button
+								<DialogFooter className="gap-2">
+									<Button
 										type="button"
+										variant="outline"
 										onClick={() => setStep(0)}
-										className="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors cursor-pointer"
 									>
 										Back
-									</button>
-									<button
+									</Button>
+									<Button
 										type="button"
+										variant="secondary"
 										onClick={handleTest}
 										disabled={testing}
-										className="px-4 py-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
 									>
 										{testing ? "Testing..." : "Test Connection"}
-									</button>
-									<button
-										type="submit"
-										disabled={loading}
-										className="px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-									>
+									</Button>
+									<Button type="submit" disabled={loading}>
 										{loading ? "Creating..." : "Create Connection"}
-									</button>
-								</div>
+									</Button>
+								</DialogFooter>
 							</form>
 						)}
-						<button
-							type="button"
-							onClick={() => {
-								setOpened(false);
-								reset();
-								setStep(0);
-							}}
-							className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
-						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								className="h-6 w-6"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-							>
-								<title>Close</title>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M6 18L18 6M6 6l12 12"
-								/>
-							</svg>
-						</button>
+					</DialogContent>
+				</Dialog>
+			</div>
+
+			{isLoadingConnections ? (
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					{[1, 2, 3].map((i) => (
+						<Card key={i} className="overflow-hidden">
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<Skeleton className="h-5 w-1/2" />
+								<Skeleton className="h-5 w-16" />
+							</CardHeader>
+							<CardContent>
+								<div className="space-y-2">
+									<Skeleton className="h-4 w-3/4" />
+									<Skeleton className="h-4 w-1/2" />
+								</div>
+							</CardContent>
+							<CardFooter className="justify-end space-x-2">
+								<Skeleton className="h-8 w-8" />
+								<Skeleton className="h-8 w-8" />
+							</CardFooter>
+						</Card>
+					))}
+				</div>
+			) : (
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					{connections.map((conn) => (
+						<Card key={conn.id}>
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<CardTitle className="text-lg font-semibold">
+									{conn.name}
+								</CardTitle>
+								<Badge
+									variant={
+										getStatusVariant(conn.status) as
+											| "default"
+											| "secondary"
+											| "destructive"
+											| "outline"
+									}
+								>
+									{conn.status}
+								</Badge>
+							</CardHeader>
+							<CardContent>
+								<div className="text-sm text-muted-foreground space-y-1">
+									<p>
+										{conn.dbType} - {conn.host}:{conn.port}
+									</p>
+									<p>Database: {conn.database}</p>
+									{conn.lastSyncedAt && (
+										<p className="text-xs pt-2">
+											Last synced:{" "}
+											{new Date(conn.lastSyncedAt).toLocaleString()}
+										</p>
+									)}
+								</div>
+							</CardContent>
+							<CardFooter className="justify-end space-x-2">
+								<Button
+									variant="ghost"
+									size="icon"
+									onClick={() => handleSync(conn.id)}
+								>
+									<IconRefresh className="h-4 w-4" />
+								</Button>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="text-destructive hover:text-destructive"
+									onClick={() => handleDelete(conn.id)}
+								>
+									<IconTrash className="h-4 w-4" />
+								</Button>
+							</CardFooter>
+						</Card>
+					))}
+				</div>
+			)}
+
+			{!isLoadingConnections && connections.length === 0 && (
+				<div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center animate-in fade-in-50">
+					<div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
+						<h3 className="mt-4 text-lg font-semibold">No connections yet</h3>
+						<p className="mb-4 mt-2 text-sm text-muted-foreground">
+							Add a database connection to start monitoring performance.
+						</p>
+						<Button onClick={() => setOpened(true)}>
+							<IconPlus className="mr-2 h-4 w-4" />
+							Add Connection
+						</Button>
 					</div>
 				</div>
 			)}

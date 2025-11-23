@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Open_Sans } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const openSans = Open_Sans({
-	variable: "--font-open-sans",
+const inter = Inter({
+	variable: "--font-inter",
 	subsets: ["latin"],
 });
 
@@ -21,7 +21,7 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<head></head>
-			<body className={`${openSans.variable} antialiased`}>
+			<body className={`${inter.variable} antialiased font-sans`}>
 				<Providers>{children}</Providers>
 			</body>
 		</html>

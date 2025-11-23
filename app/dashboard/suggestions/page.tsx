@@ -4,6 +4,16 @@ import { useOrganization } from "@clerk/nextjs";
 import { IconBulb, IconCheck, IconX } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 interface Connection {
 	id: string;
@@ -127,180 +137,196 @@ export default function SuggestionsPage() {
 		}
 	};
 
-	const getPriorityColor = (priority: string) => {
+	const getPriorityVariant = (priority: string) => {
 		switch (priority) {
 			case "HIGH":
-				return "bg-red-500";
+				return "destructive";
 			case "MEDIUM":
-				return "bg-yellow-500";
+				return "default"; // Using default (primary color) for medium
 			case "LOW":
-				return "bg-blue-500";
+				return "secondary";
 			default:
-				return "bg-gray-500";
+				return "outline";
 		}
 	};
 
-	const getStatusColor = (status: string) => {
+	const getStatusVariant = (status: string) => {
 		switch (status) {
 			case "NEW":
-				return "bg-blue-500";
+				return "default";
 			case "REVIEWED":
-				return "bg-yellow-500";
+				return "secondary";
 			case "APPLIED":
-				return "bg-green-500";
+				return "outline"; // Greenish usually, but outline works for applied
 			case "DISMISSED":
-				return "bg-gray-500";
+				return "ghost";
 			default:
-				return "bg-gray-500";
+				return "outline";
 		}
 	};
 
 	return (
-		<div className="container mx-auto p-8">
-			<div className="flex justify-between items-center mb-8">
-				<h1 className="text-3xl font-bold">Optimization Suggestions</h1>
-				<div className="flex items-center space-x-4">
-					<select
-						value={selectedConnection ?? ""}
-						onChange={(e) => setSelectedConnection(e.target.value)}
-						className="p-2 border rounded-md w-72 bg-white text-gray-900 border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
-					>
-						<option value="" disabled>
-							Select connection
-						</option>
-						{connections.map((c) => (
-							<option key={c.id} value={c.id}>
-								{c.name}
-							</option>
-						))}
-					</select>
-					<button
-						type="button"
+		<div className="space-y-6">
+			<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+				<h1 className="text-3xl font-bold tracking-tight">
+					Optimization Suggestions
+				</h1>
+				<div className="flex items-center gap-2 w-full md:w-auto">
+					<div className="w-full md:w-[280px]">
+						<Select
+							value={selectedConnection ?? ""}
+							onValueChange={(value) => setSelectedConnection(value)}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="Select connection" />
+							</SelectTrigger>
+							<SelectContent>
+								{connections.map((c) => (
+									<SelectItem key={c.id} value={c.id}>
+										{c.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+					<Button
 						onClick={handleGenerate}
 						disabled={generating || !selectedConnection}
-						className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center disabled:bg-gray-400 hover:cursor-pointer disabled:cursor-not-allowed"
 					>
 						<IconBulb className="w-4 h-4 mr-2" />
-						{generating ? "Generating..." : "Generate Suggestions"}
-					</button>
+						{generating ? "Generating..." : "Generate"}
+					</Button>
 				</div>
 			</div>
 
 			{selectedConnection && (
-				<div className="flex space-x-4 mb-4">
-					<select
-						value={filterStatus ?? ""}
-						onChange={(e) => setFilterStatus(e.target.value || null)}
-						className="p-2 border rounded-md bg-white text-gray-900 border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
-					>
-						<option value="">Filter by status</option>
-						<option value="NEW">New</option>
-						<option value="REVIEWED">Reviewed</option>
-						<option value="APPLIED">Applied</option>
-						<option value="DISMISSED">Dismissed</option>
-					</select>
-					<select
-						value={filterPriority ?? ""}
-						onChange={(e) => setFilterPriority(e.target.value || null)}
-						className="p-2 border rounded-md bg-white text-gray-900 border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
-					>
-						<option value="">Filter by priority</option>
-						<option value="HIGH">High</option>
-						<option value="MEDIUM">Medium</option>
-						<option value="LOW">Low</option>
-					</select>
+				<div className="flex flex-wrap gap-4">
+					<div className="w-[200px]">
+						<Select
+							value={filterStatus ?? "ALL"}
+							onValueChange={(value) =>
+								setFilterStatus(value === "ALL" ? null : value)
+							}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="Filter by status" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="ALL">All Statuses</SelectItem>
+								<SelectItem value="NEW">New</SelectItem>
+								<SelectItem value="REVIEWED">Reviewed</SelectItem>
+								<SelectItem value="APPLIED">Applied</SelectItem>
+								<SelectItem value="DISMISSED">Dismissed</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+					<div className="w-[200px]">
+						<Select
+							value={filterPriority ?? "ALL"}
+							onValueChange={(value) =>
+								setFilterPriority(value === "ALL" ? null : value)
+							}
+						>
+							<SelectTrigger>
+								<SelectValue placeholder="Filter by priority" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="ALL">All Priorities</SelectItem>
+								<SelectItem value="HIGH">High</SelectItem>
+								<SelectItem value="MEDIUM">Medium</SelectItem>
+								<SelectItem value="LOW">Low</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
 				</div>
 			)}
 
 			{loading && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 text-white">
-					Loading...
+				<div className="flex items-center justify-center h-64">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
 				</div>
 			)}
 
-			<div className="space-y-4">
+			<div className="grid gap-6">
 				{suggestions.map((suggestion) => (
-					<div
-						key={suggestion.id}
-						className="bg-white rounded-lg shadow-md p-6 border border-gray-100"
-					>
-						<div className="flex justify-between items-center mb-2">
-							<div className="flex items-center space-x-2">
-								<span
-									className={`px-2 py-1 text-xs font-semibold text-white rounded-full ${getPriorityColor(suggestion.priority)}`}
-								>
+					<Card key={suggestion.id}>
+						<CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+							<div className="flex items-center gap-2">
+								<Badge variant={getPriorityVariant(suggestion.priority) as any}>
 									{suggestion.priority}
-								</span>
-								<span
-									className={`px-2 py-1 text-xs font-semibold text-white rounded-full ${getStatusColor(suggestion.status)}`}
-								>
+								</Badge>
+								<Badge variant={getStatusVariant(suggestion.status) as any}>
 									{suggestion.status}
-								</span>
-								<span className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-200 rounded-full">
-									{suggestion.suggestionType}
-								</span>
+								</Badge>
+								<Badge variant="outline">{suggestion.suggestionType}</Badge>
 							</div>
-							<div className="flex space-x-2">
+							<div className="flex gap-2">
 								{suggestion.status === "NEW" && (
 									<>
-										<button
-											type="button"
+										<Button
+											size="icon"
+											variant="ghost"
+											className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
 											onClick={() =>
 												handleUpdateStatus(suggestion.id, "APPLIED")
 											}
-											className="p-2 rounded-full hover:bg-gray-100 text-green-600 transition-colors cursor-pointer"
+											title="Mark as Applied"
 										>
-											<IconCheck className="w-4 h-4" />
-										</button>
-										<button
-											type="button"
+											<IconCheck className="h-4 w-4" />
+										</Button>
+										<Button
+											size="icon"
+											variant="ghost"
+											className="h-8 w-8 text-muted-foreground hover:text-foreground"
 											onClick={() =>
 												handleUpdateStatus(suggestion.id, "DISMISSED")
 											}
-											className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+											title="Dismiss"
 										>
-											<IconX className="w-4 h-4" />
-										</button>
+											<IconX className="h-4 w-4" />
+										</Button>
 									</>
 								)}
 							</div>
-						</div>
-						<p className="text-sm my-4 whitespace-pre-wrap text-gray-700">
-							{suggestion.suggestionText}
-						</p>
-						{suggestion.queryExecution && (
-							<div className="bg-gray-50 rounded p-3 mb-4 border border-gray-200">
-								<p className="text-xs text-gray-500 mb-1 font-medium uppercase tracking-wider">
-									Related Query
-								</p>
-								<pre className="text-xs font-mono whitespace-pre-wrap text-gray-800 bg-white p-2 rounded border border-gray-100 overflow-x-auto">
-									{suggestion.queryExecution.queryText.substring(0, 200)}
-									{suggestion.queryExecution.queryText.length > 200
-										? "..."
-										: ""}
-								</pre>
-							</div>
-						)}
-						<p className="text-xs text-gray-400">
-							Created: {new Date(suggestion.createdAt).toLocaleString()}
-						</p>
-					</div>
+						</CardHeader>
+						<CardContent>
+							<p className="text-sm whitespace-pre-wrap mb-4">
+								{suggestion.suggestionText}
+							</p>
+							{suggestion.queryExecution && (
+								<div className="bg-muted/50 rounded-lg p-3 border">
+									<p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">
+										Related Query
+									</p>
+									<pre className="text-xs font-mono whitespace-pre-wrap overflow-x-auto">
+										{suggestion.queryExecution.queryText.substring(0, 200)}
+										{suggestion.queryExecution.queryText.length > 200
+											? "..."
+											: ""}
+									</pre>
+								</div>
+							)}
+							<p className="text-xs text-muted-foreground mt-4">
+								Created: {new Date(suggestion.createdAt).toLocaleString()}
+							</p>
+						</CardContent>
+					</Card>
 				))}
 			</div>
 
 			{!loading && suggestions.length === 0 && (
-				<div className="bg-white rounded-lg shadow-md p-12 text-center border border-gray-100">
-					<div className="text-gray-300 mb-4">
-						<IconBulb className="w-16 h-16 mx-auto" stroke={1} />
+				<div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center animate-in fade-in-50 min-h-[400px]">
+					<div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
+						<div className="rounded-full bg-muted p-4 mb-4">
+							<IconBulb className="h-8 w-8 text-muted-foreground" />
+						</div>
+						<h3 className="text-lg font-semibold">No Suggestions Found</h3>
+						<p className="mb-4 mt-2 text-sm text-muted-foreground">
+							{selectedConnection
+								? 'Click "Generate" to analyze your database.'
+								: "Select a connection above to view optimization suggestions."}
+						</p>
 					</div>
-					<h3 className="text-lg font-medium text-gray-900 mb-1">
-						No Suggestions Found
-					</h3>
-					<p className="text-gray-500">
-						{selectedConnection
-							? 'Click "Generate Suggestions" to analyze your database.'
-							: "Select a connection above to view optimization suggestions."}
-					</p>
 				</div>
 			)}
 		</div>
