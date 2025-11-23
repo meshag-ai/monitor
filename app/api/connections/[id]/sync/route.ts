@@ -40,7 +40,7 @@ export async function POST(
 		const workflowId = `sync-${id}-${Date.now()}`;
 		log.info({ workflowId }, "Starting sync workflow");
 
-		const temporal = getTemporalClient();
+		const temporal = await getTemporalClient();
 
 		const temporalTaskQueue = process.env.TEMPORAL_TASK_QUEUE;
 		if (!temporalTaskQueue) {

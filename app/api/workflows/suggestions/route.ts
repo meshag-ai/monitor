@@ -45,7 +45,7 @@ export async function POST(req: Request) {
 		}
 
 		const workflowId = `suggestions-${connectionId}-${Date.now()}`;
-		const temporal = getTemporalClient();
+		const temporal = await getTemporalClient();
 
 		if (!process.env.TEMPORAL_TASK_QUEUE) {
 			throw new Error(

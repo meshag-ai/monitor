@@ -46,7 +46,7 @@ export async function POST(req: Request) {
 		}
 
 		const workflowId = `sync-${connectionId}-${Date.now()}`;
-		const temporal = getTemporalClient();
+		const temporal = await getTemporalClient();
 		if (!process.env.TEMPORAL_TASK_QUEUE) {
 			throw new Error(
 				"TEMPORAL_TASK_QUEUE is not defined in the environment variables",

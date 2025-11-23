@@ -40,7 +40,7 @@ export async function POST(
 		const workflowId = `generate-suggestions-${connectionId}-${Date.now()}`;
 		log.info({ workflowId }, "Starting suggestion generation workflow");
 
-		const temporal = getTemporalClient();
+		const temporal = await getTemporalClient();
 
 		if (!process.env.TEMPORAL_TASK_QUEUE) {
 			throw new Error(
