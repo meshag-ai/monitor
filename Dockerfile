@@ -1,5 +1,5 @@
 # Stage 1: Install dependencies
-FROM node:20-alpine AS dependencies
+FROM node:20-slim AS dependencies
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
@@ -14,10 +14,13 @@ COPY .npmrc* ./
 RUN pnpm install --frozen-lockfile
 
 # Stage 2: Build the application
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
+
+# Install OpenSSL for Prisma
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -36,10 +39,13 @@ COPY tsconfig.json ./
 RUN pnpm prisma:generate
 
 # Stage 3: Production image
-FROM node:20-alpine AS production
+FROM node:20-slim AS production
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
+
+# Install OpenSSL for Prisma
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -65,8 +71,8 @@ COPY lib ./lib
 COPY tsconfig.json ./tsconfig.json
 
 # Create a non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S temporal -u 1001 -G nodejs
+RUN groupadd -g 1001 nodejs && \
+    useradd -r -u 1001 -g nodejs temporal
 
 # Change ownership of app directory
 RUN chown -R temporal:nodejs /app
