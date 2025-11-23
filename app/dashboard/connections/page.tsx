@@ -66,6 +66,7 @@ export default function ConnectionsPage() {
 	const [isLoadingConnections, setIsLoadingConnections] = useState(true);
 	const [testing, setTesting] = useState(false);
 	const [step, setStep] = useState(0);
+	const [systemIp, setSystemIp] = useState<string | null>(null);
 
 	const {
 		register,
@@ -87,6 +88,21 @@ export default function ConnectionsPage() {
 			pollingIntervalMinutes: 1440,
 		},
 	});
+
+	useEffect(() => {
+		if (opened) {
+			fetch("/api/system/ip")
+				.then((res) => res.json())
+				.then((data) => {
+					if (data.ip) {
+						setSystemIp(data.ip);
+					} else {
+						setSystemIp("Direct Connection");
+					}
+				})
+				.catch(() => setSystemIp("Unknown"));
+		}
+	}, [opened]);
 
 	const fetchConnections = useCallback(async () => {
 		setIsLoadingConnections(true);
@@ -258,6 +274,27 @@ export default function ConnectionsPage() {
 											Follow these steps to configure your PostgreSQL database:
 										</p>
 										<ol className="list-decimal list-inside space-y-2">
+											<li>
+												<strong className="text-foreground">
+													Allow access from our IP
+												</strong>
+												<div className="mt-1">
+													{systemIp ? (
+														<div className="flex items-center gap-2">
+															<code className="bg-muted p-1 rounded font-mono text-xs">
+																{systemIp}
+															</code>
+															<span className="text-xs text-muted-foreground">
+																(Whitelist this IP in your firewall)
+															</span>
+														</div>
+													) : (
+														<span className="text-xs text-muted-foreground italic">
+															(Loading IP...)
+														</span>
+													)}
+												</div>
+											</li>
 											<li>
 												<strong className="text-foreground">
 													Enable pg_stat_statements

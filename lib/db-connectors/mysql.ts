@@ -1,4 +1,6 @@
+import type { PoolOptions } from "mysql2";
 import mysql from "mysql2/promise";
+import { SocksClient } from "socks";
 import type {
 	ConnectionConfig,
 	DbConnector,
@@ -15,7 +17,8 @@ export class MySQLConnector implements DbConnector {
 
 	constructor(config: ConnectionConfig) {
 		this.config = config;
-		this.pool = mysql.createPool({
+
+		const poolConfig: PoolOptions = {
 			host: config.host,
 			port: config.port,
 			database: config.database,
@@ -25,7 +28,30 @@ export class MySQLConnector implements DbConnector {
 			waitForConnections: true,
 			connectionLimit: 10,
 			queueLimit: 0,
-		});
+		};
+
+		if (config.proxyUrl) {
+			const proxyUrl = new URL(config.proxyUrl);
+			poolConfig.stream = async () => {
+				const result = await SocksClient.createConnection({
+					proxy: {
+						host: proxyUrl.hostname,
+						port: parseInt(proxyUrl.port, 10),
+						type: 5,
+						userId: proxyUrl.username,
+						password: proxyUrl.password,
+					},
+					command: "connect",
+					destination: {
+						host: config.host,
+						port: config.port,
+					},
+				});
+				return result.socket;
+			};
+		}
+
+		this.pool = mysql.createPool(poolConfig);
 	}
 
 	async testConnection(): Promise<boolean> {

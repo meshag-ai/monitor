@@ -1,5 +1,6 @@
-import crypto from "crypto";
-import { Client, Pool } from "pg";
+import { Socket } from "net";
+import { Pool, type PoolConfig } from "pg";
+import { SocksClient } from "socks";
 import type {
 	ConnectionConfig,
 	DbConnector,
@@ -16,7 +17,8 @@ export class PostgresConnector implements DbConnector {
 
 	constructor(config: ConnectionConfig) {
 		this.config = config;
-		this.pool = new Pool({
+
+		const poolConfig: PoolConfig = {
 			host: config.host,
 			port: config.port,
 			database: config.database,
@@ -24,7 +26,40 @@ export class PostgresConnector implements DbConnector {
 			password: config.password,
 			max: 5,
 			connectionTimeoutMillis: 5000,
-		});
+		};
+
+		if (config.proxyUrl) {
+			const proxyUrl = new URL(config.proxyUrl);
+			poolConfig.stream = () => {
+				const socket = new Socket();
+
+				SocksClient.createConnection({
+					proxy: {
+						host: proxyUrl.hostname,
+						port: parseInt(proxyUrl.port, 10),
+						type: 5,
+						userId: proxyUrl.username,
+						password: proxyUrl.password,
+					},
+					command: "connect",
+					destination: {
+						host: config.host,
+						port: config.port,
+					},
+				})
+					.then((result) => {
+						result.socket.pipe(socket);
+						socket.pipe(result.socket);
+					})
+					.catch((err) => {
+						socket.destroy(err);
+					});
+
+				return socket;
+			};
+		}
+
+		this.pool = new Pool(poolConfig);
 	}
 
 	async testConnection(): Promise<boolean> {

@@ -4,6 +4,7 @@ export interface ConnectionConfig {
 	database: string;
 	username: string;
 	password: string;
+	proxyUrl?: string;
 }
 
 export type QueryStat = {

@@ -36,27 +36,43 @@ export async function POST(req: Request) {
 			"Testing new connection",
 		);
 
-		let connector: DbConnector;
-		if (data.dbType === "POSTGRES") {
-			connector = new PostgresConnector({
-				host: data.host,
-				port: data.port,
-				database: data.database,
-				username: data.username,
-				password: data.password,
-			});
-		} else {
-			connector = new MySQLConnector({
-				host: data.host,
-				port: data.port,
-				database: data.database,
-				username: data.username,
-				password: data.password,
-			});
-		}
+		const proxyUrl = process.env.PROXY_URL;
 
-		const isValid = await connector.testConnection();
+		// Helper to create connector
+		const createConnector = (useProxy: boolean) => {
+			if (data.dbType === "POSTGRES") {
+				return new PostgresConnector({
+					host: data.host,
+					port: data.port,
+					database: data.database,
+					username: data.username,
+					password: data.password,
+					proxyUrl: useProxy ? proxyUrl : undefined,
+				});
+			} else {
+				return new MySQLConnector({
+					host: data.host,
+					port: data.port,
+					database: data.database,
+					username: data.username,
+					password: data.password,
+					proxyUrl: useProxy ? proxyUrl : undefined,
+				});
+			}
+		};
+
+		// Try direct connection first
+		let connector = createConnector(false);
+		let isValid = await connector.testConnection();
 		await connector.close();
+
+		// If direct failed and proxy is available, try proxy
+		if (!isValid && proxyUrl) {
+			log.info("Direct connection failed, trying via proxy");
+			connector = createConnector(true);
+			isValid = await connector.testConnection();
+			await connector.close();
+		}
 
 		if (isValid) {
 			log.info(
