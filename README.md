@@ -32,13 +32,13 @@ MeshAG automatically monitors your PostgreSQL and MySQL databases, collects perf
 
 ### Prerequisites
 
-- Node.js 20+
+- Bun 1.0+
 - PostgreSQL database (for application data)
 - Temporal Cloud account or self-hosted Temporal server
 - Clerk account for authentication
 - OpenAI API key
 
-### Installation
+### Local Development
 
 1. **Clone the repository**
    ```bash
@@ -48,7 +48,7 @@ MeshAG automatically monitors your PostgreSQL and MySQL databases, collects perf
 
 2. **Install dependencies**
    ```bash
-   pnpm install
+   bun install
    ```
 
 3. **Set up environment variables**
@@ -73,126 +73,73 @@ MeshAG automatically monitors your PostgreSQL and MySQL databases, collects perf
 
 4. **Run database migrations**
    ```bash
-   pnpm prisma:migrate
+   bun run prisma:migrate
    ```
 
 5. **Generate Prisma client**
    ```bash
-   pnpm prisma:generate
+   bun run prisma:generate
    ```
 
 6. **Start the development server**
    ```bash
-   pnpm dev
+   bun dev
    ```
 
    Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 7. **Start the Temporal worker** (in a separate terminal)
    ```bash
-   pnpm temporal:worker
+   bun run temporal:worker
    ```
 
 ## Production Deployment
 
-MeshAG consists of two components that need to be deployed:
+MeshAG is designed to be deployed using Docker. We provide pre-built images for both the web application and the Temporal worker.
 
-### 1. Next.js Application
+### Using Docker Compose (Recommended)
 
-The Next.js application can be deployed to any platform that supports Node.js applications.
+The easiest way to run MeshAG in production is using Docker Compose. This will spin up the Next.js application, the Temporal worker, and optionally a local Temporal server and PostgreSQL database if needed.
 
-#### Deploy to Vercel (Recommended)
+1. **Configure Environment**
+   
+   Ensure your `.env` file is populated with production values.
 
-1. Push your code to GitHub, GitLab, or Bitbucket
-2. Import the project in [Vercel](https://vercel.com)
-3. Configure environment variables in Vercel dashboard
-4. Deploy!
+2. **Run with Docker Compose**
 
-#### Deploy to Other Platforms
+   If you want to use the pre-built images from our registry:
 
-Build the application:
+   ```bash
+   # Set your GitHub username to pull the correct images
+   docker-compose up -d
+   ```
+
+   This will start:
+   - **app**: The Next.js web application (port 3000)
+   - **worker**: The Temporal worker for background tasks
+   - **postgres**: A local PostgreSQL instance (if DATABASE_URL is not provided)
+   - **temporal-server**: A local Temporal dev server (for testing/self-hosted)
+
+### Manual Docker Deployment
+
+You can also run the containers individually.
+
+**Web Application:**
 ```bash
-pnpm build
+docker run -d \
+  --name meshag-app \
+  -p 3000:3000 \
+  --env-file .env.production \
+  ghcr.io/meshag-ai/monitor/monitor:latest
 ```
 
-Start the production server:
+**Temporal Worker:**
 ```bash
-pnpm start
+docker run -d \
+  --name meshag-worker \
+  --env-file .env.production \
+  ghcr.io/meshag-ai/monitor/worker:latest
 ```
-
-The application will run on port 3000 by default.
-
-### 2. Temporal Worker
-
-The Temporal worker must run continuously to process background jobs. It's packaged as a Docker container for easy deployment.
-
-#### Using Docker (Recommended)
-
-1. **Build the Docker image locally**:
-   ```bash
-   docker build -t meshag-temporal-worker:latest .
-   ```
-
-2. **Create a production environment file** (`.env.production`):
-   ```env
-   TEMPORAL_ADDRESS=your-namespace.tmprl.cloud:7233
-   TEMPORAL_API_KEY=your-api-key
-   TEMPORAL_TASK_QUEUE=meshag-tasks
-   TEMPORAL_NAMESPACE=default
-   DATABASE_URL=postgresql://user:pass@host:5432/db
-   ENCRYPTION_KEY=your-encryption-key
-   OPENAI_API_KEY=sk-...
-   ```
-
-3. **Run the container**:
-   ```bash
-   docker run -d \
-     --name meshag-worker \
-     --env-file .env.production \
-     --restart unless-stopped \
-     meshag-temporal-worker:latest
-   ```
-
-#### Using GitHub Container Registry
-
-The project includes a GitHub Actions workflow that automatically builds and publishes Docker images to GitHub Container Registry (ghcr.io).
-
-1. **Enable GitHub Actions** in your repository
-
-2. **The workflow triggers on**:
-   - Push to main branch (affecting temporal/, lib/, prisma/, or Dockerfile)
-   - Manual dispatch from Actions tab
-
-3. **Pull the published image**:
-   ```bash
-   docker pull ghcr.io/<your-username>/meshag/temporal-worker:latest
-   ```
-
-4. **Run the published image**:
-   ```bash
-   docker run -d \
-     --name meshag-worker \
-     --env-file .env.production \
-     --restart unless-stopped \
-     ghcr.io/<your-username>/meshag/temporal-worker:latest
-   ```
-
-#### Deploy to Cloud Platforms
-
-**AWS ECS/Fargate**:
-- Push the Docker image to AWS ECR
-- Create an ECS task definition with environment variables
-- Run as a Fargate service
-
-**Google Cloud Run**:
-- Push the Docker image to Google Container Registry
-- Deploy as a Cloud Run service with environment variables
-
-**Kubernetes**:
-- Deploy using a Deployment with the Docker image
-- Store secrets in Kubernetes Secrets or ConfigMaps
-
-See [DOCKER.md](./DOCKER.md) for detailed Docker deployment instructions.
 
 ## Architecture
 
