@@ -28,7 +28,7 @@ The temporal worker requires the following environment variables:
 | `TEMPORAL_API_KEY` | API key for Temporal Cloud | No* | `your-api-key` |
 | `TEMPORAL_CLIENT_CERT` | Client certificate for mTLS | No* | `-----BEGIN CERTIFICATE-----...` |
 | `TEMPORAL_CLIENT_KEY` | Client private key for mTLS | No* | `-----BEGIN PRIVATE KEY-----...` |
-| `TEMPORAL_TASK_QUEUE` | Task queue name | Yes | `plotweft-tasks` |
+| `TEMPORAL_TASK_QUEUE` | Task queue name | Yes | `monitor-tasks` |
 | `TEMPORAL_NAMESPACE` | Temporal namespace | No | `default` |
 | `DATABASE_URL` | PostgreSQL connection URL for Prisma | Yes | `postgresql://user:pass@host:5432/db` |
 | `ENCRYPTION_KEY` | Encryption key for credentials | Yes | `your-encryption-key` |
@@ -42,7 +42,7 @@ The temporal worker requires the following environment variables:
 docker run --rm \
   -e TEMPORAL_ADDRESS=your-namespace.tmprl.cloud:7233 \
   -e TEMPORAL_API_KEY=your-api-key \
-  -e TEMPORAL_TASK_QUEUE=plotweft-tasks \
+  -e TEMPORAL_TASK_QUEUE=monitor-tasks \
   -e TEMPORAL_NAMESPACE=default \
   -e DATABASE_URL=postgresql://user:pass@host:5432/db \
   -e ENCRYPTION_KEY=your-encryption-key \
@@ -57,7 +57,7 @@ Create a `.env.production` file with your environment variables:
 ```env
 TEMPORAL_ADDRESS=your-namespace.tmprl.cloud:7233
 TEMPORAL_API_KEY=your-api-key
-TEMPORAL_TASK_QUEUE=plotweft-tasks
+TEMPORAL_TASK_QUEUE=monitor-tasks
 TEMPORAL_NAMESPACE=default
 DATABASE_URL=postgresql://user:pass@host:5432/db
 ENCRYPTION_KEY=your-encryption-key
@@ -96,10 +96,10 @@ Images are tagged with:
 
 ```bash
 # Pull the latest image
-docker pull ghcr.io/<your-username>/plotweft/temporal-worker:latest
+docker pull ghcr.io/<your-username>/monitor/temporal-worker:latest
 
 # Pull a specific version
-docker pull ghcr.io/<your-username>/plotweft/temporal-worker:main-abc1234
+docker pull ghcr.io/<your-username>/monitor/temporal-worker:main-abc1234
 ```
 
 ### Running Published Images
@@ -107,7 +107,7 @@ docker pull ghcr.io/<your-username>/plotweft/temporal-worker:main-abc1234
 ```bash
 docker run --rm \
   --env-file .env.production \
-  ghcr.io/<your-username>/plotweft/temporal-worker:latest
+  ghcr.io/<your-username>/monitor/temporal-worker:latest
 ```
 
 ## Multi-Platform Support

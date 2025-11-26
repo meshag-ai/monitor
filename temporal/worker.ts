@@ -5,8 +5,6 @@ async function run() {
 	const address = process.env.TEMPORAL_ADDRESS;
 	const apiKey = process.env.TEMPORAL_API_KEY;
 
-	console.log("Starting Temporal worker", { address, apiKey });
-
 	if (!address) {
 		throw new Error("TEMPORAL_ADDRESS environment variable is required");
 	}

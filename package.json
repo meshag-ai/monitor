@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "temporal:worker": "tsx temporal/worker.ts"
+    "temporal:worker": "bun temporal/worker.ts",
+    "start:worker": "bun temporal/worker.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.7.0",

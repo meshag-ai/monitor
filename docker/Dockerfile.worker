@@ -1,0 +1,49 @@
+FROM oven/bun:1.3-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+WORKDIR /app
+
+COPY package.json bun.lock* ./
+RUN bun install --frozen-lockfile
+
+# Rebuild the source code/generate clients
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Generate Prisma client
+RUN bunx prisma generate
+
+# We don't necessarily need to run 'bun run build' (Next.js build) for the worker if it just runs TS files,
+# but it ensures all types/codegen are correct. However, to save time/space, we can skip full next build 
+# if the worker doesn't depend on .next artifacts. 
+# Assuming worker code is in temporal/ and imports from lib/ etc.
+
+# Production image
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy necessary files for the worker
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
+COPY --from=builder --chown=nextjs:nodejs /app/temporal ./temporal
+COPY --from=builder --chown=nextjs:nodejs /app/lib ./lib
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+# Copy node_modules from builder (which has deps installed and potentially prisma client generated in node_modules)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+
+USER nextjs
+
+# Command to run the worker
+CMD ["bun", "run", "start:worker"]
+
