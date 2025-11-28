@@ -1,12 +1,15 @@
-FROM oven/bun:1.3-slim AS base
+FROM node:23-bookworm-slim AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY package.json bun.lock* ./
-RUN bun install --frozen-lockfile
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -27,10 +30,10 @@ ENV NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY
 ENV NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST
 
 # Generate Prisma client
-RUN bunx prisma generate
+RUN npx prisma generate
 
 # Build Next.js app
-RUN bun run build
+RUN pnpm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -55,9 +58,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy prisma directory for migrations
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
-# Copy minimal files needed for potential server-side logic if standalone misses anything specific
-# (Standalone usually handles it, but ensuring consistency)
-
 USER nextjs
 
 EXPOSE 3000
@@ -65,5 +65,5 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-CMD ["bun", "server.js"]
+CMD ["node", "server.js"]
 

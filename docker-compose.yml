@@ -74,7 +74,7 @@ services:
         condition: service_healthy
       temporal-server:
         condition: service_started
-    command: sh -c "bunx prisma migrate deploy && bun server.js"
+    command: sh -c "npx prisma migrate deploy && node server.js"
 
   worker:
     image: ghcr.io/meshag-ai/monitor/worker:latest
