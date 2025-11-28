@@ -56,6 +56,9 @@ services:
 
   app:
     image: ghcr.io/meshag-ai/monitor/monitor:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.app
     restart: always
     ports:
       - "3000:3000"
@@ -75,6 +78,9 @@ services:
 
   worker:
     image: ghcr.io/meshag-ai/monitor/worker:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker
     restart: always
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-monitor}

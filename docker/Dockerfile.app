@@ -1,4 +1,4 @@
-FROM oven/bun:1.3-alpine AS base
+FROM oven/bun:1 AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -51,6 +51,9 @@ RUN chown nextjs:nodejs .next
 # Automatically leverage output traces to reduce image size
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copy prisma directory for migrations
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
 # Copy minimal files needed for potential server-side logic if standalone misses anything specific
 # (Standalone usually handles it, but ensuring consistency)
