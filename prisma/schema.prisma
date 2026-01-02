@@ -40,13 +40,15 @@ enum SuggestionStatus {
 }
 
 model User {
-  id        String   @id
-  email     String
-  createdAt DateTime @default(now())
+  id           String   @id
+  email        String
+  name         String?
+  passwordHash String?  // For basic auth fallback, hashed with bcrypt
+  createdAt    DateTime @default(now())
 
   optimizationSuggestions OptimizationSuggestion[]
   organizations           OrganizationUser[]
-
+ 
   @@index([email])
 }
 
