@@ -11,7 +11,7 @@ MeshAG is a web application designed to help users monitor and optimize their da
 -   **Framework:** [Next.js](https://nextjs.org/) (App Router)
 -   **Database:** PostgreSQL
 -   **ORM:** [Prisma](https://www.prisma.io/)
--   **Background Jobs:** [Temporal.io](https://temporal.io/)
+-   **Background Jobs:** [Workflow](https://useworkflow.dev/) (Durable Execution)
 -   **Authentication:** [Clerk](https://clerk.com/)
 -   **Styling:** Mantine UI
 
@@ -22,9 +22,9 @@ The project is a monorepo-style Next.js application with the following key direc
 -   `app/`: Contains the frontend pages and API routes.
     -   `app/(dashboard)/`: Protected routes for the user dashboard.
     -   `app/api/`: API endpoints for managing connections, suggestions, and workflows.
+    -   `app/workflows/`: Workflow definitions (`syncDatabaseStats`, `generateSuggestions`).
 -   `lib/`: Shared libraries and utilities, including database connectors, encryption, and the Prisma client.
 -   `prisma/`: Prisma schema and migration files.
--   `temporal/`: Temporal workflow and activity definitions, along with the worker setup.
 
 ## Database Schema
 
@@ -56,33 +56,21 @@ The database schema is defined in `prisma/schema.prisma` using Prisma. It includ
 -   **SchemaSnapshot**: A point-in-time snapshot of the database schema.
 -   **SchemaTable**, **SchemaColumn**, **SchemaIndex**: Detailed schema information for each snapshot.
 
-## Temporal Workflows & Activities
+## Workflows
 
-The application uses Temporal.io to run background jobs for syncing database statistics and generating optimization suggestions.
+The application uses `workflow` (useworkflow.dev) for durable background jobs.
 
 ### Workflows
 
 -   **`syncDatabaseStats(connectionId: string)`**:
-    -   This workflow orchestrates the process of fetching and saving database performance metrics for a given connection.
-    -   It ensures that the connection is active before proceeding.
+    -   Orchestrates the process of fetching and saving database performance metrics.
+    -   Ensures the connection is active.
     -   Handles errors by updating the connection status to `ERROR`.
 -   **`generateSuggestions(connectionId: string)`**:
-    -   This workflow generates optimization suggestions for a connection.
-    -   It fetches slow queries, index usage, and table access patterns.
-    -   It then calls an LLM (`gpt-4`) to generate suggestions based on the collected metrics.
-    -   Finally, it saves the suggestions to the database.
-
-### Activities
-
--   **`getConnection(connectionId: string)`**: Retrieves a connection from the database.
--   **`fetchDatabaseStats(...)`**: Connects to the user's database (Postgres or MySQL) and fetches query stats, schema, table patterns, and index usage.
--   **`saveDatabaseStats(connectionId: string, stats: ...)`**: Saves the fetched database stats to the application's database in a single transaction.
--   **`updateConnectionStatus(connectionId: string, status: ...)`**: Updates the status of a database connection.
--   **`fetchSlowQueries(connectionId: string)`**: Fetches slow queries for a connection from the local database.
--   **`fetchIndexUsage(connectionId: string)`**: Fetches index usage data.
--   **`fetchTablePatterns(connectionId: string)`**: Fetches table access pattern data.
--   **`generateLLMSuggestions(context: any)`**: Sends the collected metrics to the OpenAI API to generate suggestions.
--   **`saveSuggestions(connectionId: string, userId: string, suggestions: any[])`**: Saves the generated suggestions to the database.
+    -   Generates optimization suggestions for a connection.
+    -   Fetches slow queries, index usage, and table access patterns.
+    -   Calls an LLM (`gpt-4`) to generate suggestions.
+    -   Saves the suggestions to the database.
 
 ## API Routes
 
@@ -103,6 +91,3 @@ The application exposes several API routes for managing resources and triggering
     -   `/[id]`: `GET`, `PUT` a specific suggestion.
     -   `/[id]/generate`: `POST` to trigger the `generateSuggestions` workflow.
 -   **`app/api/webhooks/clerk`**: `POST` route for handling Clerk webhooks to sync user data.
--   **`app/api/workflows/**`**: Routes for triggering Temporal workflows.
-    -   `/suggestions`: `POST` to trigger the `generateSuggestions` workflow.
-    -   `/sync`: `POST` to trigger the `syncDatabaseStats` workflow.

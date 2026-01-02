@@ -1,9 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { start } from "workflow/api";
+import { syncDatabaseStats } from "@/app/workflows/sync-database-stats";
 import { getOrganizationIdByUserId } from "@/lib/crud";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
-import { getTemporalClient } from "@/lib/temporal-client";
 
 export async function POST(
 	req: Request,
@@ -37,26 +38,12 @@ export async function POST(
 			);
 		}
 
-		const workflowId = `sync-${id}-${Date.now()}`;
-		log.info({ workflowId }, "Starting sync workflow");
+		log.info("Starting sync workflow");
 
-		const temporal = await getTemporalClient();
+		const { runId } = await start(syncDatabaseStats, [id]);
 
-		const temporalTaskQueue = process.env.TEMPORAL_TASK_QUEUE;
-		if (!temporalTaskQueue) {
-			throw new Error(
-				"TEMPORAL_TASK_QUEUE is not defined in the environment variables",
-			);
-		}
-
-		await temporal.workflow.start("syncDatabaseStats", {
-			taskQueue: temporalTaskQueue,
-			workflowId,
-			args: [id],
-		});
-
-		log.info({ workflowId }, "Successfully started sync workflow");
-		return NextResponse.json({ success: true, workflowId });
+		log.info({ runId }, "Successfully started sync workflow");
+		return NextResponse.json({ success: true, runId });
 	} catch (error) {
 		log.error({ error }, "Failed to start sync workflow");
 		return NextResponse.json(
